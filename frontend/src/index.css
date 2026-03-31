@@ -1,0 +1,56 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 220 23% 97%;
+  --foreground: 222 35% 12%;
+  --card: 0 0% 100%;
+  --card-2: 220 30% 99%;
+  --border: 220 18% 89%;
+  --primary: 221 83% 53%;
+  --secondary: 215 20% 65%;
+  --muted: 220 20% 95%;
+  --accent: 220 25% 90%;
+  --danger: 0 72% 51%;
+  --success: 142 71% 45%;
+}
+
+* {
+  @apply border-border;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background font-sans text-foreground antialiased;
+  background-image:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(241, 245, 249, 0.88) 100%);
+  overflow-x: hidden;
+}
+
+a {
+  @apply transition;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
