@@ -16,6 +16,10 @@ const promotionApi = {
     const { data } = await api.post("/me/promotions/request", payload);
     return data;
   },
+  reportIssue: async (payload) => {
+    const { data } = await api.post("/me/promotions/report", payload);
+    return data;
+  },
   approvePromotion: async (id, payload) => {
     const { data } = await api.post(`/promotions/${id}/approve`, payload);
     return data;

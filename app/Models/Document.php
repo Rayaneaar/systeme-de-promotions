@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DocumentCategoryEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,6 +16,7 @@ class Document extends Model
         'display_name',
         'stored_name',
         'file_path',
+        'category',
         'file_type',
         'mime_type',
         'file_size',
@@ -24,6 +26,7 @@ class Document extends Model
     protected function casts(): array
     {
         return [
+            'category' => DocumentCategoryEnum::class,
             'file_size' => 'integer',
         ];
     }

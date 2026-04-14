@@ -4,15 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\RoleEnum;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Professeur\ImportTeachersRequest;
+use App\Http\Requests\Professeur\SendTeacherMailRequest;
 use App\Http\Requests\Professeur\StoreProfesseurRequest;
 use App\Http\Requests\Professeur\UpdateOwnProfileRequest;
 use App\Http\Requests\Professeur\UpdateProfesseurRequest;
 use App\Http\Resources\ProfesseurResource;
+use App\Mail\AdminTeacherMessageMail;
 use App\Models\Professeur;
 use App\Models\User;
 use App\Services\EligibilityService;
+use App\Services\NotificationService;
+use App\Services\TeacherImportService;
 use App\Support\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class ProfesseurController extends Controller
 {
@@ -44,12 +50,6 @@ class ProfesseurController extends Controller
             ->latest();
 
         $professeurs = $query->paginate($request->integer('per_page', 10))->withQueryString();
-
-        $professeurs->getCollection()->transform(function (Professeur $professeur) {
-            $professeur->eligibility = $this->eligibilityService->getSummary($professeur);
-
-            return $professeur;
-        });
 
         return ApiResponse::paginated(
             $professeurs,
@@ -116,6 +116,41 @@ class ProfesseurController extends Controller
         return ApiResponse::success(new ProfesseurResource($professeur->fresh()->load('user')), 'Dossier enseignant mis a jour avec succes.');
     }
 
+    public function import(ImportTeachersRequest $request, TeacherImportService $teacherImportService)
+    {
+        $this->authorize('create', Professeur::class);
+
+        $result = $teacherImportService->import($request->file('file'));
+
+        return ApiResponse::success($result, 'Fichier importe avec succes.');
+    }
+
+    public function contact(SendTeacherMailRequest $request, Professeur $professeur, NotificationService $notificationService)
+    {
+        $this->authorize('view', $professeur);
+        abort_unless($request->user()->isAdmin(), 403, 'Acces refuse.');
+
+        $professeur->loadMissing('user');
+
+        if (! $professeur->user?->email) {
+            return ApiResponse::error("Cet enseignant n'a pas d'adresse email exploitable.", 422);
+        }
+
+        Mail::to($professeur->user->email)->send(new AdminTeacherMessageMail(
+            $professeur,
+            $request->validated()['subject'],
+            $request->validated()['message']
+        ));
+
+        $notificationService->createAdminMessageNotification(
+            $professeur,
+            $request->validated()['subject'],
+            $request->validated()['message']
+        );
+
+        return ApiResponse::success(null, 'Email envoye avec succes.');
+    }
+
     public function destroy(Professeur $professeur)
     {
         $this->authorize('delete', $professeur);
@@ -142,12 +177,6 @@ class ProfesseurController extends Controller
         if (isset($data['email'])) {
             $professeur->user->update(['email' => $data['email']]);
             unset($data['email']);
-        }
-
-        if (isset($data['first_name']) || isset($data['last_name'])) {
-            $professeur->user->update([
-                'name' => trim(($data['first_name'] ?? $professeur->first_name).' '.($data['last_name'] ?? $professeur->last_name)),
-            ]);
         }
 
         $professeur->update($data);

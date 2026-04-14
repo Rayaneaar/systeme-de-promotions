@@ -4,12 +4,12 @@ const documentApi = {
     const { data } = await api.get("/documents", { params });
     return data;
   },
-  getMyDocuments: async () => {
-    const { data } = await api.get("/me/documents");
+  getMyDocuments: async (params) => {
+    const { data } = await api.get("/me/documents", { params });
     return data;
   },
-  getTeacherDocuments: async (professeurId) => {
-    const { data } = await api.get(`/professeurs/${professeurId}/documents`);
+  getTeacherDocuments: async (professeurId, params) => {
+    const { data } = await api.get(`/professeurs/${professeurId}/documents`, { params });
     return data;
   },
   uploadMyDocument: async (formData) => {

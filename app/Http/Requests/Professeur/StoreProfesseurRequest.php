@@ -19,7 +19,7 @@ class StoreProfesseurRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['nullable', 'string', 'min:8'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'cin' => ['nullable', 'string', 'max:20', 'unique:professeurs,cin'],
             'ppr' => ['nullable', 'string', 'max:20', 'unique:professeurs,ppr'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],

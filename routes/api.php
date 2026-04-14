@@ -9,7 +9,6 @@ use App\Http\Controllers\Api\PromotionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 });
 
@@ -32,9 +31,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/documents', [DocumentController::class, 'uploadMyDocument']);
         Route::get('/promotions', [PromotionController::class, 'index']);
         Route::post('/promotions/request', [PromotionController::class, 'submitMyRequest']);
+        Route::post('/promotions/report', [PromotionController::class, 'submitMyReport']);
     });
 
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::get('/documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::patch('/documents/{document}/rename', [DocumentController::class, 'rename']);
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy']);
     Route::get('/notifications', [NotificationController::class, 'index']);
@@ -43,6 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:admin')->group(function () {
         Route::apiResource('professeurs', ProfesseurController::class);
+        Route::post('/professeurs/import', [ProfesseurController::class, 'import']);
+        Route::post('/professeurs/{professeur}/contact', [ProfesseurController::class, 'contact']);
         Route::get('/professeurs/{professeur}/eligibility', [ProfesseurController::class, 'eligibility']);
         Route::get('/professeurs/{professeur}/documents', [DocumentController::class, 'listForProfesseur']);
         Route::post('/professeurs/{professeur}/documents', [DocumentController::class, 'uploadForProfesseur']);

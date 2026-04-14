@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\DocumentCategoryEnum;
 use App\Models\Document;
 use App\Models\Professeur;
 use App\Models\User;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 
 class DocumentService
 {
-    public function upload(Professeur $professeur, UploadedFile $file, User $uploader, ?string $displayName = null): Document
+    public function upload(Professeur $professeur, UploadedFile $file, User $uploader, ?string $displayName = null, ?string $category = null): Document
     {
         $storedName = FileHelper::buildStoredName($file);
         $folder = 'documents/'.$professeur->id;
@@ -23,6 +24,7 @@ class DocumentService
             'display_name' => $displayName,
             'stored_name' => $storedName,
             'file_path' => $path,
+            'category' => $category ?: DocumentCategoryEnum::ADMINISTRATIF->value,
             'file_type' => FileHelper::extensionFromName($file->getClientOriginalName()),
             'mime_type' => $file->getClientMimeType(),
             'file_size' => $file->getSize(),

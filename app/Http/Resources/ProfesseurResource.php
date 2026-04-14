@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\PromotionReferenceHelper;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -10,6 +11,8 @@ class ProfesseurResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $eligibility = $this->eligibility ?? null;
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -27,14 +30,17 @@ class ProfesseurResource extends JsonResource
             'grade' => $this->grade?->value,
             'grade_label' => $this->grade?->label(),
             'echelon' => $this->echelon,
+            'reference_number' => PromotionReferenceHelper::resolve($this->grade?->value, $this->echelon),
             'date_of_birth' => $this->date_of_birth?->toDateString(),
             'date_recrutement' => $this->date_recrutement?->toDateString(),
             'date_last_promotion' => $this->date_last_promotion?->toDateString(),
             'date_last_grade_promotion' => $this->date_last_grade_promotion?->toDateString(),
             'date_last_echelon_promotion' => $this->date_last_echelon_promotion?->toDateString(),
             'anciennete_cache' => $this->anciennete_cache,
+            'promotion_reference_matrix' => PromotionReferenceHelper::matrix(),
             'promotion_timeline' => $this->buildPromotionTimeline(),
-            'eligibility' => $this->when(isset($this->eligibility), $this->eligibility),
+            'eligibility' => $this->when(! is_null($eligibility), $eligibility),
+            'next_promotion' => $this->when(! is_null(data_get($eligibility, 'next_promotion')), data_get($eligibility, 'next_promotion')),
             'documents_count' => $this->whenCounted('documents'),
             'promotions_count' => $this->whenCounted('promotions'),
             'user' => $this->whenLoaded('user', fn () => new UserResource($this->user)),

@@ -14,7 +14,6 @@ class ApprovePromotionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'effective_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1500'],
         ];
     }

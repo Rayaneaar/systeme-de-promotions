@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { professeurApi } from "@/api/professeurApi";
 import { extractErrorMessage, formatDate } from "@/lib/utils";
+
 function TeachersListPage() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
@@ -17,67 +18,137 @@ function TeachersListPage() {
     },
     onError: (error) => toast.error(extractErrorMessage(error))
   });
-  return <section className="glass-panel rounded-[28px] border border-white/60 p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-slate-950">Enseignants</h3>
-          <p className="text-sm text-slate-600">Vue d'ensemble des dossiers et eligibilites.</p>
-        </div>
-        <Link
-    to="/admin/enseignants/nouveau"
-    className="inline-flex rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white"
-  >
-          Ajouter un enseignant
-        </Link>
-      </div>
+  const teachers = data?.data ?? [];
+  return <div className="space-y-6">
+      <section className="soft-panel rounded-[34px] px-5 py-5 sm:px-6 sm:py-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="page-eyebrow">Faculty Directory</p>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+              Dossiers enseignants
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
+              Consultez les dossiers, creez de nouveaux comptes enseignants et suivez les dates
+              importantes de carriere.
+            </p>
+          </div>
 
-      <div className="mt-6 overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <thead className="text-slate-500">
-            <tr>
-              <th className="pb-3">Nom</th>
-              <th className="pb-3">Email</th>
-              <th className="pb-3">Grade</th>
-              <th className="pb-3">Echelon</th>
-              <th className="pb-3">Recrutement</th>
-              <th className="pb-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {(data?.data ?? []).map((teacher) => <tr key={teacher.id}>
-                <td className="py-4 font-medium text-slate-900">{teacher.full_name}</td>
-                <td className="py-4 text-slate-600">{teacher.email}</td>
-                <td className="py-4 text-slate-600">{teacher.grade_label}</td>
-                <td className="py-4 text-slate-600">{teacher.echelon}</td>
-                <td className="py-4 text-slate-600">{formatDate(teacher.date_recrutement)}</td>
-                <td className="py-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Link to={`/admin/enseignants/${teacher.id}`} className="font-semibold text-blue-700">
-                      Voir
-                    </Link>
-                    <Link to={`/admin/enseignants/${teacher.id}/modifier`} className="font-semibold text-slate-700">
-                      Modifier
-                    </Link>
-                    <button
-    type="button"
-    onClick={() => {
-      if (window.confirm(`Supprimer ${teacher.full_name} ?`)) {
-        deleteMutation.mutate(teacher.id);
-      }
-    }}
-    className="font-semibold text-rose-700"
-  >
-                      Supprimer
-                    </button>
-                  </div>
-                </td>
-              </tr>)}
-          </tbody>
-        </table>
-        {!isLoading && !data?.data.length && <p className="py-8 text-sm text-slate-500">Aucun enseignant trouve.</p>}
-      </div>
-    </section>;
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <Link
+              to="/admin/enseignants/import"
+              className="accent-button inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-sm font-semibold text-white transition hover:brightness-105 sm:w-auto"
+            >
+              Ajouter ou importer
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="soft-panel rounded-[34px] px-4 py-4 sm:px-5 sm:py-5">
+        <div className="grid gap-4 xl:hidden">
+          {teachers.map((teacher) => <article key={teacher.id} className="soft-card rounded-[28px] px-4 py-4 sm:px-5 sm:py-5">
+              <div className="flex flex-col gap-4">
+                <div className="min-w-0">
+                  <p className="text-lg font-bold text-slate-950">{teacher.full_name}</p>
+                  <p className="mt-1 break-all text-sm text-slate-500">{teacher.email}</p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+              ["Grade", teacher.grade_label],
+              ["Echelon", teacher.echelon],
+              ["Recrutement", formatDate(teacher.date_recrutement)],
+              ["Derniere promo", formatDate(teacher.date_last_promotion)],
+              ["Numero DR", teacher.num_dr]
+            ].map(([label, value]) => <div key={label} className="rounded-[22px] bg-white/80 px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">{value}</p>
+                    </div>)}
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <Link
+      to={`/admin/enseignants/${teacher.id}`}
+      className="rounded-full bg-indigo-50 px-4 py-3 text-center text-sm font-semibold text-indigo-600"
+    >
+                    Voir
+                  </Link>
+                  <Link
+      to={`/admin/enseignants/${teacher.id}/modifier`}
+      className="rounded-full bg-slate-100 px-4 py-3 text-center text-sm font-semibold text-slate-700"
+    >
+                    Modifier
+                  </Link>
+                  <button
+      type="button"
+      onClick={() => {
+        if (window.confirm(`Supprimer ${teacher.full_name} ?`)) {
+          deleteMutation.mutate(teacher.id);
+        }
+      }}
+      className="rounded-full bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700"
+    >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            </article>)}
+          {!isLoading && !teachers.length && <p className="py-8 text-center text-sm text-slate-500">Aucun enseignant trouve.</p>}
+        </div>
+
+        <div className="hidden xl:block">
+          <div className="overflow-x-auto">
+            <table className="min-w-[940px] w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                  <th className="px-4 py-4">Nom</th>
+                  <th className="px-4 py-4">Email</th>
+                  <th className="px-4 py-4">Grade</th>
+                  <th className="px-4 py-4">Echelon</th>
+                  <th className="px-4 py-4">Recrutement</th>
+                  <th className="px-4 py-4">Derniere promo</th>
+                  <th className="px-4 py-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200/80">
+                {teachers.map((teacher) => <tr key={teacher.id} className="align-top">
+                    <td className="px-4 py-5 font-semibold text-slate-950">{teacher.full_name}</td>
+                    <td className="px-4 py-5 text-slate-500">{teacher.email}</td>
+                    <td className="px-4 py-5 text-slate-600">{teacher.grade_label}</td>
+                    <td className="px-4 py-5 text-slate-600">{teacher.echelon}</td>
+                    <td className="px-4 py-5 text-slate-600">{formatDate(teacher.date_recrutement)}</td>
+                    <td className="px-4 py-5 text-slate-600">{formatDate(teacher.date_last_promotion)}</td>
+                    <td className="px-4 py-5">
+                      <div className="flex flex-wrap gap-3">
+                        <Link to={`/admin/enseignants/${teacher.id}`} className="font-semibold text-indigo-600">
+                          Voir
+                        </Link>
+                        <Link to={`/admin/enseignants/${teacher.id}/modifier`} className="font-semibold text-slate-700">
+                          Modifier
+                        </Link>
+                        <button
+      type="button"
+      onClick={() => {
+        if (window.confirm(`Supprimer ${teacher.full_name} ?`)) {
+          deleteMutation.mutate(teacher.id);
+        }
+      }}
+      className="font-semibold text-rose-700"
+    >
+                          Supprimer
+                        </button>
+                      </div>
+                    </td>
+                  </tr>)}
+              </tbody>
+            </table>
+          </div>
+          {!isLoading && !teachers.length && <p className="py-8 text-center text-sm text-slate-500">Aucun enseignant trouve.</p>}
+        </div>
+      </section>
+    </div>;
 }
+
 export {
   TeachersListPage as default
 };

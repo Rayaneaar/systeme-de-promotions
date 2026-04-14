@@ -12,6 +12,12 @@ const professeurApi = {
     const { data } = await api.post("/professeurs", payload);
     return data;
   },
+  importTeachers: async (formData) => {
+    const { data } = await api.post("/professeurs/import", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    return data;
+  },
   updateTeacher: async (id, payload) => {
     const { data } = await api.patch(`/professeurs/${id}`, payload);
     return data;
@@ -26,6 +32,10 @@ const professeurApi = {
   },
   updateMyProfile: async (payload) => {
     const { data } = await api.patch("/me/profile", payload);
+    return data;
+  },
+  contactTeacher: async (id, payload) => {
+    const { data } = await api.post(`/professeurs/${id}/contact`, payload);
     return data;
   },
   getMyEligibility: async () => {

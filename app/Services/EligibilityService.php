@@ -35,6 +35,15 @@ class EligibilityService
         $recommendation = $gradeEligible
             ? PromotionTypeEnum::GRADE->value
             : ($echelonEligible ? PromotionTypeEnum::ECHELON->value : null);
+        $nextEchelonDate = $echelonRule
+            ? $echelonReference->copy()->addYears($echelonRule['years_required'])
+            : null;
+        $nextGradeDate = $gradeRule !== null && $professeur->echelon >= ($gradeRule['min_echelon'] ?? PHP_INT_MAX)
+            ? $this->maxDate(
+                $gradeReference->copy()->addYears($gradeRule['years_in_grade_required']),
+                $echelonReference->copy()->addYears($gradeRule['years_in_echelon_required'])
+            )
+            : null;
 
         return [
             'years_of_service' => $yearsOfService,
@@ -65,6 +74,7 @@ class EligibilityService
                 'can_submit_request' => $gradeEligible || $echelonEligible,
                 'recommended_type' => $recommendation,
             ],
+            'next_promotion' => $this->resolveNextPromotion($today, $recommendation, $nextGradeDate, $nextEchelonDate),
         ];
     }
 
@@ -79,6 +89,48 @@ class EligibilityService
             'recommended_type' => $eligibility['overall']['recommended_type'],
             'next_grade' => $eligibility['grade']['next'],
             'next_echelon' => $eligibility['echelon']['next'],
+            'next_promotion' => $eligibility['next_promotion'],
         ];
+    }
+
+    protected function resolveNextPromotion(Carbon $today, ?string $recommendedType, ?Carbon $nextGradeDate, ?Carbon $nextEchelonDate): ?array
+    {
+        if ($recommendedType !== null) {
+            return [
+                'type' => $recommendedType,
+                'label' => $recommendedType === PromotionTypeEnum::GRADE->value ? 'Promotion de grade' : "Promotion d'echelon",
+                'date' => $today->toDateString(),
+                'countdown_days' => 0,
+            ];
+        }
+
+        $candidates = collect([
+            $nextGradeDate ? [
+                'type' => PromotionTypeEnum::GRADE->value,
+                'label' => 'Promotion de grade',
+                'date' => $nextGradeDate,
+            ] : null,
+            $nextEchelonDate ? [
+                'type' => PromotionTypeEnum::ECHELON->value,
+                'label' => "Promotion d'echelon",
+                'date' => $nextEchelonDate,
+            ] : null,
+        ])->filter()->sortBy(fn (array $candidate) => $candidate['date']->timestamp)->first();
+
+        if (! $candidates) {
+            return null;
+        }
+
+        return [
+            'type' => $candidates['type'],
+            'label' => $candidates['label'],
+            'date' => $candidates['date']->toDateString(),
+            'countdown_days' => max(0, $today->diffInDays($candidates['date'], false)),
+        ];
+    }
+
+    protected function maxDate(Carbon $first, Carbon $second): Carbon
+    {
+        return $first->greaterThan($second) ? $first : $second;
     }
 }

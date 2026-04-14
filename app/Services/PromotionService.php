@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Enums\PromotionStatusEnum;
 use App\Enums\PromotionTypeEnum;
+use App\Mail\PromotionApprovedMail;
 use App\Models\Professeur;
 use App\Models\Promotion;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Mail;
 
 class PromotionService
 {
@@ -44,14 +46,17 @@ class PromotionService
         }
 
         $payload = $this->buildPromotionPayload($professeur, $type);
-
-        return Promotion::create([
+        $promotion = Promotion::create([
             ...$payload,
             'professeur_id' => $professeur->id,
             'requested_by' => $teacher->id,
             'status' => PromotionStatusEnum::PENDING,
             'notes' => $notes,
         ]);
+
+        $this->notificationService->createPromotionSubmittedNotification($promotion->fresh(['professeur.user']));
+
+        return $promotion;
     }
 
     public function approve(Promotion $promotion, User $approver, array $data = []): Promotion
@@ -62,7 +67,7 @@ class PromotionService
             ]);
         }
 
-        $effectiveDate = Carbon::parse($data['effective_date'] ?? now())->toDateString();
+        $effectiveDate = Carbon::today()->toDateString();
         $professeur = $promotion->professeur;
 
         if ($promotion->type === PromotionTypeEnum::GRADE) {
@@ -89,9 +94,15 @@ class PromotionService
             'notes' => $data['notes'] ?? $promotion->notes,
         ]);
 
-        $this->notificationService->createPromotionApprovedNotification($promotion->fresh(['professeur.user']));
+        $promotion = $promotion->fresh(['professeur.user', 'approver', 'requester']);
 
-        return $promotion->fresh(['professeur', 'approver', 'requester']);
+        $this->notificationService->createPromotionApprovedNotification($promotion);
+
+        if ($promotion->professeur?->user?->email) {
+            Mail::to($promotion->professeur->user->email)->send(new PromotionApprovedMail($promotion));
+        }
+
+        return $promotion;
     }
 
     public function reject(Promotion $promotion, User $approver, array $data): Promotion

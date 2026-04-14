@@ -7,8 +7,10 @@ use App\Http\Requests\Promotion\ApprovePromotionRequest;
 use App\Http\Requests\Promotion\RejectPromotionRequest;
 use App\Http\Requests\Promotion\StorePromotionRequest;
 use App\Http\Requests\Promotion\UpdatePromotionRequest;
+use App\Models\Professeur;
 use App\Http\Resources\PromotionResource;
 use App\Models\Promotion;
+use App\Services\NotificationService;
 use App\Services\PromotionService;
 use App\Support\ApiResponse;
 use Illuminate\Http\Request;
@@ -113,5 +115,34 @@ class PromotionController extends Controller
             ->load(['professeur.user', 'approver', 'requester']);
 
         return ApiResponse::success(new PromotionResource($promotion), 'Demande de promotion soumise avec succes.', 201);
+    }
+
+    public function submitMyReport(Request $request, NotificationService $notificationService)
+    {
+        $validated = $request->validate([
+            'subject' => ['required', 'string', 'max:150'],
+            'message' => ['required', 'string', 'max:1500'],
+            'promotion_id' => ['nullable', 'integer', 'exists:promotions,id'],
+        ]);
+
+        /** @var Professeur $professeur */
+        $professeur = $request->user()->professeur()->firstOrFail();
+        $promotion = null;
+
+        if (! empty($validated['promotion_id'])) {
+            $promotion = Promotion::query()
+                ->where('id', $validated['promotion_id'])
+                ->where('professeur_id', $professeur->id)
+                ->firstOrFail();
+        }
+
+        $notificationService->createTeacherReportNotification(
+            $professeur,
+            $validated['subject'],
+            $validated['message'],
+            $promotion
+        );
+
+        return ApiResponse::success(null, 'Votre signalement a ete transmis a l administration.');
     }
 }
